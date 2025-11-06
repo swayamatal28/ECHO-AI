@@ -1,0 +1,591 @@
+import { useState, useEffect, useRef } from 'react';
+import { Send, StopCircle, Loader, Bot, User, Sparkles, Mic, MicOff, Volume2, VolumeX, Phone, PhoneOff } from 'lucide-react';
+import axiosInstance from '../api/axiosInstance';
+import ReportCardModal from '../components/ReportCardModal';
+
+/**
+ * SpeakAI page component
+ * AI-powered English conversation practice
+ */
+const SpeakAI = () => {
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [conversationId, setConversationId] = useState(null);
+  const [isStarting, setIsStarting] = useState(true);
+  const [showReport, setShowReport] = useState(false);
+  const [reportCard, setReportCard] = useState(null);
+  const [error, setError] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [autoSendEnabled, setAutoSendEnabled] = useState(false);
+  
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const voiceModeRef = useRef(false);
+
+  // Keep ref in sync with state for use inside callbacks
+  useEffect(() => { voiceModeRef.current = voiceMode; }, [voiceMode]);
+
+  // Check if browser supports speech recognition & synthesis
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const speechSupported = !!SpeechRecognition;
+  const ttsSupported = 'speechSynthesis' in window;
+
+  /**
+   * Speak text aloud using browser TTS
+   * Returns a promise that resolves when speech ends
+   */
+  const speakText = (text) => {
+    return new Promise((resolve) => {
+      if (!ttsSupported) { resolve(); return; }
+      
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.95;
+      utterance.pitch = 1;
+      
+      // Try to pick a natural English voice
+      const voices = window.speechSynthesis.getVoices();
+      const englishVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Female'))
+        || voices.find(v => v.lang.startsWith('en-US'))
+        || voices.find(v => v.lang.startsWith('en'));
+      if (englishVoice) utterance.voice = englishVoice;
+
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => { setIsSpeaking(false); resolve(); };
+      utterance.onerror = () => { setIsSpeaking(false); resolve(); };
+
+      window.speechSynthesis.speak(utterance);
+    });
+  };
+
+  /**
+   * Stop speaking
+   */
+  const stopSpeaking = () => {
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  };
+
+  // Load voices (some browsers load them async)
+  useEffect(() => {
+    if (ttsSupported) {
+      window.speechSynthesis.getVoices();
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
+    return () => {
+      window.speechSynthesis.cancel();
+      recognitionRef.current?.stop();
+    };
+  }, []);
+
+  /**
+   * Toggle speech-to-text listening
+   * In voice mode: uses non-continuous recognition → auto-sends when user stops talking
+   * In text mode: continuous recognition → appends to input field
+   */
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+    startListening();
+  };
+
+  const startListening = () => {
+    if (!speechSupported) {
+      setError('Speech recognition is not supported in your browser. Please use Chrome or Edge.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.maxAlternatives = 1;
+
+    if (voiceModeRef.current) {
+      // Voice mode: single utterance, auto-send
+      recognition.interimResults = false;
+      recognition.continuous = false;
+    } else {
+      // Text mode: continuous, fill input
+      recognition.interimResults = true;
+      recognition.continuous = true;
+    }
+
+    recognition.onstart = () => setIsListening(true);
+
+    recognition.onresult = (event) => {
+      let finalTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        }
+      }
+
+      if (finalTranscript) {
+        if (voiceModeRef.current) {
+          // In voice mode, auto-send the message
+          setAutoSendEnabled(true);
+          setInputMessage(finalTranscript.trim());
+        } else {
+          setInputMessage(prev => (prev + ' ' + finalTranscript).trim());
+        }
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      if (event.error !== 'aborted' && event.error !== 'no-speech') {
+        setError('Microphone error: ' + event.error + '. Please check permissions.');
+      }
+      setIsListening(false);
+    };
+
+    recognition.onend = () => setIsListening(false);
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
+  // Auto-send in voice mode when transcript is ready
+  useEffect(() => {
+    if (autoSendEnabled && inputMessage.trim() && voiceMode) {
+      setAutoSendEnabled(false);
+      // Trigger send programmatically
+      const fakeEvent = { preventDefault: () => {} };
+      sendMessage(fakeEvent);
+    }
+  }, [autoSendEnabled, inputMessage]);
+
+  // Auto-scroll to bottom when new messages arrive
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Start conversation on component mount
+  useEffect(() => {
+    startConversation();
+  }, []);
+
+  /**
+   * Start a new conversation or resume existing one
+   */
+  const startConversation = async () => {
+    setIsStarting(true);
+    setError('');
+
+    try {
+      const response = await axiosInstance.post('/chat/start');
+      const { conversationId: convId, messages: initialMessages } = response.data.data;
+      
+      setConversationId(convId);
+      setMessages(initialMessages.map(msg => ({
+        ...msg,
+        id: Date.now() + Math.random(),
+      })));
+    } catch (err) {
+      console.error('Failed to start conversation:', err);
+      setError('Failed to start conversation. Please try again.');
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  /**
+   * Send a message and get AI response
+   */
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    
+    if (!inputMessage.trim() || isLoading || !conversationId) return;
+
+    const userMessage = inputMessage.trim();
+    setInputMessage('');
+    setError('');
+
+    // Add user message to UI immediately
+    const userMsgObj = {
+      id: Date.now(),
+      role: 'user',
+      content: userMessage,
+    };
+    setMessages(prev => [...prev, userMsgObj]);
+    setIsLoading(true);
+
+    try {
+      const response = await axiosInstance.post('/chat/message', {
+        conversationId,
+        message: userMessage,
+      });
+
+      const { aiMessage } = response.data.data;
+      
+      // Add AI response
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: aiMessage.content,
+      }]);
+
+      // In voice mode: speak the AI response, then auto-listen again
+      if (voiceMode && ttsSupported) {
+        await speakText(aiMessage.content);
+        // Auto-start listening again after AI finishes speaking
+        if (voiceModeRef.current) {
+          setTimeout(() => startListening(), 400);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to send message:', err);
+      const errMsg = err.response?.data?.message || 'Failed to send message. Please try again.';
+      setError(errMsg);
+      // Remove the user message on error
+      setMessages(prev => prev.filter(m => m.id !== userMsgObj.id));
+    } finally {
+      setIsLoading(false);
+      inputRef.current?.focus();
+    }
+  };
+
+  /**
+   * End the conversation and show report
+   */
+  const endConversation = async () => {
+    if (!conversationId) return;
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await axiosInstance.post('/chat/end', {
+        conversationId,
+      });
+
+      const { reportCard: report } = response.data.data;
+      setReportCard(report);
+      setShowReport(true);
+    } catch (err) {
+      console.error('Failed to end conversation:', err);
+      setError('Failed to generate report. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Start a new conversation after ending
+   */
+  const handleNewConversation = () => {
+    setShowReport(false);
+    setReportCard(null);
+    setMessages([]);
+    setConversationId(null);
+    startConversation();
+  };
+
+  return (
+    <div className="h-[calc(100vh-4rem)] flex flex-col">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center">
+              <Bot className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-900">Speak with AI</h1>
+              <p className="text-sm text-gray-500">Practice English conversation</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-3">
+            {/* Voice Mode Toggle */}
+            {speechSupported && ttsSupported && (
+              <button
+                onClick={() => {
+                  const next = !voiceMode;
+                  setVoiceMode(next);
+                  if (!next) {
+                    stopSpeaking();
+                    recognitionRef.current?.stop();
+                  }
+                }}
+                disabled={isLoading || isStarting}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  voiceMode
+                    ? 'bg-green-500 hover:bg-green-600 text-white focus:ring-green-500 shadow-lg shadow-green-500/25'
+                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700 focus:ring-gray-300'
+                }`}
+                title={voiceMode ? 'Switch to text mode' : 'Switch to voice mode'}
+              >
+                {voiceMode ? <Phone className="w-4 h-4" /> : <PhoneOff className="w-4 h-4" />}
+                <span>{voiceMode ? 'Voice On' : 'Voice Off'}</span>
+              </button>
+            )}
+
+            {conversationId && messages.length > 1 && (
+              <button
+                onClick={() => { stopSpeaking(); recognitionRef.current?.stop(); endConversation(); }}
+                disabled={isLoading}
+                className="btn-danger flex items-center space-x-2"
+              >
+                <StopCircle className="w-5 h-5" />
+                <span>End</span>
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Messages Container */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50">
+        {isStarting ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <Loader className="w-10 h-10 text-primary-500 animate-spin mx-auto mb-4" />
+              <p className="text-gray-500">Starting conversation...</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Tips Banner */}
+            {messages.length <= 1 && (
+              <div className="bg-primary-50 rounded-xl p-4 mb-4 border border-primary-100">
+                <div className="flex items-start space-x-3">
+                  <Sparkles className="w-5 h-5 text-primary-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      <strong>Tips for better practice:</strong>
+                    </p>
+                    <ul className="text-sm text-gray-600 mt-1 space-y-1">
+                      <li>• Toggle <strong>Voice On</strong> in the header for hands-free voice conversation</li>
+                      <li>• In voice mode: tap the mic, speak, and AI will reply with voice automatically</li>
+                      <li>• Don't worry about making mistakes - that's how you learn!</li>
+                      <li>• Ask questions to keep the conversation going</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Messages */}
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} chat-message`}
+              >
+                <div
+                  className={`flex items-start space-x-3 max-w-[80%] ${
+                    message.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''
+                  }`}
+                >
+                  {/* Avatar */}
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      message.role === 'user'
+                        ? 'bg-primary-500'
+                        : 'bg-primary-600'
+                    }`}
+                  >
+                    {message.role === 'user' ? (
+                      <User className="w-5 h-5 text-white" />
+                    ) : (
+                      <Bot className="w-5 h-5 text-white" />
+                    )}
+                  </div>
+
+                  {/* Message Bubble */}
+                  <div
+                    className={`rounded-2xl px-4 py-3 ${
+                      message.role === 'user'
+                        ? 'bg-primary-500 text-white rounded-tr-sm'
+                        : 'bg-white text-gray-800 shadow-sm border border-gray-100 rounded-tl-sm'
+                    }`}
+                  >
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                      {message.content}
+                    </p>
+                    {/* Play button for AI messages */}
+                    {message.role === 'assistant' && ttsSupported && (
+                      <button
+                        onClick={() => isSpeaking ? stopSpeaking() : speakText(message.content)}
+                        className="mt-2 flex items-center space-x-1 text-xs text-gray-400 hover:text-primary-500 transition-colors"
+                        title={isSpeaking ? 'Stop speaking' : 'Listen to this message'}
+                      >
+                        {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                        <span>{isSpeaking ? 'Stop' : 'Listen'}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Loading indicator */}
+            {isLoading && (
+              <div className="flex justify-start chat-message">
+                <div className="flex items-start space-x-3">
+                  <div className="w-9 h-9 rounded-xl bg-primary-600 flex items-center justify-center">
+                    <Bot className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="bg-white rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm border border-gray-100">
+                    <div className="flex space-x-1">
+                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                      <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Error message */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm text-center">
+                {error}
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </>
+        )}
+      </div>
+
+      {/* Input Area */}
+      <div className="bg-white border-t border-gray-200 p-4">
+        {voiceMode ? (
+          /* ── Voice Mode UI ── */
+          <div className="flex flex-col items-center py-2">
+            {/* Status text */}
+            <p className="text-sm text-gray-500 mb-3">
+              {isSpeaking
+                ? '🔊 AI is speaking...'
+                : isLoading
+                ? '🤔 AI is thinking...'
+                : isListening
+                ? '🎙️ Listening... speak now'
+                : 'Tap the mic to speak'}
+            </p>
+
+            {/* Big Mic Button */}
+            <button
+              type="button"
+              onClick={toggleListening}
+              disabled={isLoading || isStarting || !conversationId || isSpeaking}
+              className={`flex items-center justify-center w-20 h-20 rounded-full font-medium transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                isListening
+                  ? 'bg-red-500 hover:bg-red-600 text-white focus:ring-red-300 scale-110 shadow-xl shadow-red-500/30'
+                  : isSpeaking
+                  ? 'bg-yellow-400 text-white focus:ring-yellow-300'
+                  : 'bg-primary-600 text-white hover:shadow-xl hover:scale-105 focus:ring-primary-300 shadow-lg shadow-primary-500/25'
+              }`}
+              title={isListening ? 'Stop listening' : 'Start speaking'}
+            >
+              {isListening ? (
+                <div className="relative">
+                  <MicOff className="w-8 h-8" />
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full animate-ping"></span>
+                </div>
+              ) : isSpeaking ? (
+                <Volume2 className="w-8 h-8 animate-pulse" />
+              ) : (
+                <Mic className="w-8 h-8" />
+              )}
+            </button>
+
+            {/* Listening animation rings */}
+            {isListening && (
+              <div className="mt-3 flex items-center space-x-1">
+                {[...Array(5)].map((_, i) => (
+                  <span
+                    key={i}
+                    className="w-1 bg-red-500 rounded-full animate-bounce"
+                    style={{
+                      height: `${12 + Math.random() * 16}px`,
+                      animationDelay: `${i * 100}ms`,
+                      animationDuration: '0.6s',
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* ── Text Mode UI ── */
+          <>
+            <form onSubmit={sendMessage} className="flex items-center space-x-3">
+              <input
+                ref={inputRef}
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                placeholder={isListening ? '🎙️ Listening... speak now' : 'Type or tap the mic to speak...'}
+                disabled={isLoading || isStarting || !conversationId}
+                className="flex-1 input-field"
+              />
+
+              {/* Microphone Button */}
+              {speechSupported && (
+                <button
+                  type="button"
+                  onClick={toggleListening}
+                  disabled={isLoading || isStarting || !conversationId}
+                  className={`flex items-center justify-center w-12 h-12 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isListening
+                      ? 'bg-red-500 hover:bg-red-600 text-white focus:ring-red-500 animate-pulse'
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-600 focus:ring-gray-300'
+                  }`}
+                  title={isListening ? 'Stop listening' : 'Start speaking'}
+                >
+                  {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+                </button>
+              )}
+
+              {/* Send Button */}
+              <button
+                type="submit"
+                disabled={!inputMessage.trim() || isLoading || isStarting}
+                className="btn-primary flex items-center justify-center w-12 h-12 p-0"
+              >
+                {isLoading ? (
+                  <Loader className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Send className="w-5 h-5" />
+                )}
+              </button>
+            </form>
+
+            {isListening && (
+              <p className="text-xs text-red-500 mt-2 flex items-center space-x-1 animate-pulse">
+                <span className="w-2 h-2 bg-red-500 rounded-full inline-block"></span>
+                <span>Recording... tap the mic button to stop</span>
+              </p>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Report Card Modal */}
+      <ReportCardModal
+        isOpen={showReport}
+        onClose={handleNewConversation}
+        reportCard={reportCard}
+      />
+    </div>
+  );
+};
+
+export default SpeakAI;
