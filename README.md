@@ -1,6 +1,6 @@
 # ECHO — English Learning Web App
 
-Full-stack MERN application I built to help people get better at English. It covers speaking, grammar, reading, writing, and even has weekly contests with a rating system.
+Full-stack MERN application I built to help people get better at English with live conversation with AI. It covers speaking, grammar, reading, writing, and even has weekly contests with a rating system.
 
 ## What it does
 
