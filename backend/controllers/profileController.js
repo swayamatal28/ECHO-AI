@@ -127,6 +127,13 @@ const getProfileStats = async (req, res) => {
     if (totalMessagesSent > 200 || completedConversations > 20) level = 'Advanced';
     else if (totalMessagesSent > 50 || completedConversations > 5) level = 'Intermediate';
 
+    const speakingStats = user.speakingStats || {
+      totalTopicSessions: 0,
+      averageTopicScore: 0,
+      bestTopicScore: 0,
+      lastSessionDate: null
+    };
+
     res.json({
       success: true,
       data: {
@@ -144,6 +151,7 @@ const getProfileStats = async (req, res) => {
           totalMessagesSent,
           avgFluencyScore,
           level,
+          speakingStats,
         },
         heatmap: heatmapData,
       },

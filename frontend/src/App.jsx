@@ -8,6 +8,9 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import SpeakAI from './pages/SpeakAI';
+import TopicSpeaking from './pages/TopicSpeaking';
+import FreeConversation from './pages/FreeConversation';
+import RealtimeCorrection from './pages/RealtimeCorrection';
 import Recommendations from './pages/Recommendations';
 import GrammarBlogs from './pages/GrammarBlogs';
 import Profile from './pages/Profile';
@@ -128,6 +131,9 @@ function App() {
           >
             {/* Nested Dashboard Routes */}
             <Route path="speak-ai" element={<SpeakAI />} />
+            <Route path="speak-ai/topic" element={<TopicSpeaking />} />
+            <Route path="speak-ai/conversation" element={<FreeConversation />} />
+            <Route path="speak-ai/correction" element={<RealtimeCorrection />} />
             <Route path="recommendations" element={<Recommendations />} />
             <Route path="grammar-blogs" element={<GrammarBlogs />} />
             <Route path="practice" element={<Practice />} />

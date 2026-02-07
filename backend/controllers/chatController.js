@@ -22,7 +22,8 @@ const startConversation = async (req, res) => {
     // Check for existing active conversation
     const existingConversation = await Conversation.findOne({
       user: req.user._id,
-      isActive: true
+      isActive: true,
+      mode: { $ne: 'correction' }
     });
 
     if (existingConversation) {

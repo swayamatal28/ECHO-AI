@@ -49,6 +49,11 @@ const conversationSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  mode: {
+    type: String,
+    enum: ['free', 'correction'],
+    default: 'free'
+  },
   messages: [messageSchema],
   isActive: {
     type: Boolean,

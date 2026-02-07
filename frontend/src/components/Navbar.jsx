@@ -47,6 +47,12 @@ const Navbar = () => {
                 >
                   Dashboard
                 </Link>
+                <Link
+                  to="/dashboard/speak-ai"
+                  className="relative flex items-center px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700 shadow-md shadow-violet-500/25 transition-all duration-200 hover:shadow-lg hover:shadow-violet-500/30 hover:scale-[1.02]"
+                >
+                  <span>Speak with AI</span>
+                </Link>
                 
                 {/* User Menu */}
                 <div className="flex items-center space-x-3 ml-4 pl-4 border-l border-gray-200">
@@ -113,6 +119,13 @@ const Navbar = () => {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   Dashboard
+                </Link>
+                <Link
+                  to="/dashboard/speak-ai"
+                  className="flex items-center py-2 px-3 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold text-sm"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span>Speak with AI</span>
                 </Link>
                 <button
                   onClick={handleLogout}

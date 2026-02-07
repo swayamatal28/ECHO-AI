@@ -52,6 +52,12 @@ const userSchema = new mongoose.Schema({
     ratingChange: { type: Number },
     date: { type: String },
   }],
+  speakingStats: {
+    totalTopicSessions: { type: Number, default: 0 },
+    averageTopicScore: { type: Number, default: 0 },
+    bestTopicScore: { type: Number, default: 0 },
+    lastSessionDate: { type: Date }
+  },
 }, {
   timestamps: true
 });

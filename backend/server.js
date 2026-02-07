@@ -13,6 +13,7 @@ const profileRoutes = require('./routes/profileRoutes');
 const practiceRoutes = require('./routes/practiceRoutes');
 const contestRoutes = require('./routes/contestRoutes');
 const blogWritingRoutes = require('./routes/blogWritingRoutes');
+const speakingRoutes = require('./routes/speakingRoutes');
 
 const app = express();
 
@@ -40,6 +41,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/practice', practiceRoutes);
 app.use('/api/contests', contestRoutes);
 app.use('/api/blog-writing', blogWritingRoutes);
+app.use('/api/speaking', speakingRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({

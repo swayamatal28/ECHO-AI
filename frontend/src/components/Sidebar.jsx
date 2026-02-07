@@ -86,24 +86,34 @@ const Sidebar = () => {
       {/* Navigation */}
       <nav className="flex-1 p-4">
         <ul className="space-y-1">
-          {navItems.map((item) => (
-            <li key={item.path}>
-              <NavLink
-                to={item.path}
-                end={item.end}
-                className={({ isActive }) =>
-                  `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                    isActive
-                      ? 'bg-primary-600 text-white shadow-md'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-primary-600'
-                  }`
-                }
-              >
-                <item.icon className="w-5 h-5 flex-shrink-0" />
-                <span className="font-medium">{item.label}</span>
-              </NavLink>
-            </li>
-          ))}
+          {navItems.map((item) => {
+            const isSpeakAI = item.path === '/dashboard/speak-ai';
+            return (
+              <li key={item.path}>
+                <NavLink
+                  to={item.path}
+                  end={item.end}
+                  className={({ isActive }) => {
+                    if (isSpeakAI) {
+                      return `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                        isActive
+                          ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-500/25'
+                          : 'bg-violet-50 text-violet-700 hover:bg-violet-100'
+                      }`;
+                    }
+                    return `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                      isActive
+                        ? 'bg-primary-600 text-white shadow-md'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-primary-600'
+                    }`;
+                  }}
+                >
+                  <item.icon className="w-5 h-5 flex-shrink-0" />
+                  <span className="font-medium">{item.label}</span>
+                </NavLink>
+              </li>
+            );
+          })}
         </ul>
       </nav>
 
