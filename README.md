@@ -5,7 +5,13 @@ Full-stack MERN application I built to help people get better at English with li
 ## What it does
 
 ### Speak with AI
-Conversational English practice — you chat back and forth, it corrects your mistakes in a natural way, and at the end you get a report card with a fluency score, grammar mistakes, vocabulary suggestions, and feedback.
+Three distinct speaking practice modes:
+
+1. **Topic Speaking** — AI assigns a random topic, you speak for 2 minutes, then get scored out of 100 across fluency, grammar, vocabulary, and relevance (25 each) with detailed feedback, strengths, and sample corrections.
+
+2. **Free Conversation** — Open-ended chat with AI. Text or voice input, TTS playback, natural back-and-forth. End anytime to get a full report card with fluency score, grammar analysis, and vocabulary suggestions.
+
+3. **Real-time Correction** — Every sentence you say (text or voice) gets analyzed instantly. Corrections appear inline with the original error, the fix, and the grammar rule. A counter tracks total corrections across the session.
 
 ### Practice
 280 questions across 14 grammar/vocab topics (MCQ + fill-in-the-blank). Tracks your progress per topic with difficulty breakdown (Easy/Medium/Hard). LeetCode-style stats on your profile.
@@ -62,7 +68,8 @@ ECHO/
 │   │   ├── contestController.js
 │   │   ├── practiceController.js
 │   │   ├── profileController.js
-│   │   └── recommendationController.js
+│   │   ├── recommendationController.js
+│   │   └── speakingController.js
 │   ├── data/
 │   │   ├── contestData.js
 │   │   └── practiceQuestions.js
@@ -85,7 +92,8 @@ ECHO/
 │   │   ├── contestRoutes.js
 │   │   ├── practiceRoutes.js
 │   │   ├── profileRoutes.js
-│   │   └── recommendationRoutes.js
+│   │   ├── recommendationRoutes.js
+│   │   └── speakingRoutes.js
 │   ├── .env
 │   ├── package.json
 │   ├── seed.js
@@ -116,8 +124,11 @@ ECHO/
     │   │   ├── Profile.jsx
     │   │   ├── Recommendations.jsx
     │   │   ├── Register.jsx
+    │   │   ├── FreeConversation.jsx
+    │   │   ├── RealtimeCorrection.jsx
     │   │   ├── SpeakAI.jsx
-    │   │   └── TopicPractice.jsx
+    │   │   ├── TopicPractice.jsx
+    │   │   └── TopicSpeaking.jsx
     │   ├── styles/
     │   │   └── index.css
     │   ├── App.jsx
@@ -198,6 +209,15 @@ Open `http://localhost:5173` in your browser.
 |--------|----------|-------------|
 | GET | `/api/blog-writing/topic` | Get random topic |
 | POST | `/api/blog-writing/evaluate` | Submit blog for evaluation |
+
+### Speaking
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/speaking/topic` | Get random speaking topic |
+| POST | `/api/speaking/evaluate` | Evaluate topic speech transcript |
+| POST | `/api/speaking/correction/start` | Start real-time correction session |
+| POST | `/api/speaking/correction/message` | Send message for correction |
+| POST | `/api/speaking/correction/end` | End correction session + summary |
 
 ### Contests
 | Method | Endpoint | Description |

@@ -68,5 +68,12 @@ npm start      # production
 - `GET /api/blogs/grammar`
 - `GET /api/blogs/:id`
 
+**Speaking**
+- `GET /api/speaking/topic` — random speaking topic
+- `POST /api/speaking/evaluate` — evaluate topic speech transcript
+- `POST /api/speaking/correction/start` — start real-time correction session
+- `POST /api/speaking/correction/message` — send message for correction
+- `POST /api/speaking/correction/end` — end correction session + summary
+
 **Profile**
 - `GET /api/profile/stats`
