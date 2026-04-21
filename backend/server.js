@@ -5,7 +5,6 @@ const path = require('path');
 const connectDB = require('./config/db');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
-dotenv.config();
 
 const authRoutes = require('./routes/authRoutes');
 const chatRoutes = require('./routes/chatRoutes');
@@ -20,11 +19,6 @@ const speakingRoutes = require('./routes/speakingRoutes');
 const app = express();
 
 connectDB();
-
-app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174', 'http://localhost:3000'],
-  credentials: true
-}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -48,11 +42,12 @@ app.use('/api/speaking', speakingRoutes);
 const cors = require('cors');
 
 app.use(cors({
-  // IMPORTANT: Remove any trailing slash from the URL!
-  origin: "https://echo-8emlxfud0-swayams-projects-123d6f79.vercel.app/", 
+  origin: [
+    "echo-ai-git-main-swayams-projects-123d6f79.vercel.app", // Removed the "/" at the end
+    "https://echo-8emlxfud0-swayams-projects-123d6f79.vercel.app" // Add your main project domain here too
+  ], 
   credentials: true
 }));
-
 app.get('/api/health', (req, res) => {
   res.json({
     success: true,
