@@ -21,7 +21,7 @@ const app = express();
 connectDB();
 app.use(cors({
   origin: [
-    "https://echo-ai-git-main-swayams-projects-123d6f79.vercel.app", // Removed the "/" at the end
+    "echo-ai-git-main-swayams-projects-123d6f79.vercel.app", // Removed the "/" at the end
     "https://echo-8emlxfud0-swayams-projects-123d6f79.vercel.app" // Add your main project domain here too
   ], 
   credentials: true
