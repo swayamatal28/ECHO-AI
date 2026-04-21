@@ -19,13 +19,26 @@ const speakingRoutes = require('./routes/speakingRoutes');
 const app = express();
 
 connectDB();
+const defaultOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
+];
+const envOrigins = (process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const allowedOrigins = new Set([...defaultOrigins, ...envOrigins]);
+
 app.use(cors({
-  origin: [
-    "https://echo-ai-git-main-swayams-projects-123d6f79.vercel.app",
-    "https://echo-8emlxfud0-swayams-projects-123d6f79.vercel.app",
-    "http://localhost:5173" 
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // allow server-to-server or curl
+    if (allowedOrigins.size === 0 || allowedOrigins.has(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true
 }));
 app.use(express.json());

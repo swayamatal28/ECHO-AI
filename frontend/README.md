@@ -14,6 +14,11 @@ npm install
 npm run dev
 ```
 
+Set your API base URL in the hosting environment:
+```env
+VITE_API_URL=https://your-backend-domain.com
+```
+
 3. Build for production:
 ```bash
 npm run build
