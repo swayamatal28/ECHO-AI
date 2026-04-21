@@ -4,10 +4,9 @@ import axios from 'axios';
  * Axios instance with base configuration
  * Includes automatic token attachment and error handling
  */
-const apiBaseUrl = import.meta.env.VITE_API_URL || window.location.origin;
 const axiosInstance = axios.create({
-  // Use the environment variable from Vercel/Local .env, otherwise fallback to same-origin
-  baseURL: apiBaseUrl.replace(/\/$/, '') + '/api',
+  // Use the environment variable from Vercel/Local .env, otherwise fallback to localhost
+  baseURL: (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api',
   headers: {
     'Content-Type': 'application/json',
   },

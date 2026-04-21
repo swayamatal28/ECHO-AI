@@ -15,7 +15,6 @@ MONGODB_URI=mongodb://localhost:27017/echo_db
 JWT_SECRET=your_secret_key
 GEMINI_API_KEY=your_gemini_api_key
 PORT=5000
-CORS_ORIGINS=https://your-frontend-domain.com,https://your-preview-domain.com
 ```
 
 Seed sample data (optional):
