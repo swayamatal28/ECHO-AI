@@ -19,6 +19,13 @@ const speakingRoutes = require('./routes/speakingRoutes');
 const app = express();
 
 connectDB();
+app.use(cors({
+  origin: [
+    "https://echo-ai-git-main-swayams-projects-123d6f79.vercel.app", // Removed the "/" at the end
+    "https://echo-8emlxfud0-swayams-projects-123d6f79.vercel.app" // Add your main project domain here too
+  ], 
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -39,15 +46,7 @@ app.use('/api/contests', contestRoutes);
 app.use('/api/blog-writing', blogWritingRoutes);
 app.use('/api/speaking', speakingRoutes);
 
-const cors = require('cors');
 
-app.use(cors({
-  origin: [
-    "echo-ai-git-main-swayams-projects-123d6f79.vercel.app", // Removed the "/" at the end
-    "https://echo-8emlxfud0-swayams-projects-123d6f79.vercel.app" // Add your main project domain here too
-  ], 
-  credentials: true
-}));
 app.get('/api/health', (req, res) => {
   res.json({
     success: true,
