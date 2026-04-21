@@ -109,7 +109,7 @@ const sendMessage = async (req, res) => {
     }));
 
     // Get AI response from Gemini (with model fallback for rate-limits)
-    const MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-2.5-flash'];
+    const MODELS = ['gemini-2.5-flash', 'gemini-1.5-pro'];
     let aiResponse;
 
     for (const modelName of MODELS) {
@@ -220,7 +220,7 @@ If the student made grammar or spelling mistakes, deduct points accordingly.
 Include at most 5 grammar mistakes and 4 vocabulary suggestions.`;
 
   // Try to get AI analysis
-  const MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-2.5-flash'];
+  const MODELS = ['gemini-2.5-flash', 'gemini-1.5-pro'];
 
   for (const modelName of MODELS) {
     try {

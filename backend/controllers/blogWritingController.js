@@ -78,7 +78,7 @@ Respond ONLY with valid JSON (no markdown, no backticks):
   "improvements": ["<suggestion 1>", "<suggestion 2>", "<suggestion 3>"]
 }`;
 
-    const MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-2.5-flash'];
+    const MODELS = ['gemini-2.5-flash', 'gemini-1.5-pro'];
     let result = null;
 
     for (const modelName of MODELS) {

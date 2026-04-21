@@ -4,7 +4,10 @@ const User = require('../models/User');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const MODELS = ['gemini-2.0-flash-lite', 'gemini-2.0-flash', 'gemini-2.5-flash'];
+const MODELS = [
+  'gemini-2.5-flash',   // primary
+  'gemini-1.5-pro'      // fallback
+];
 
 // ═══════════════════════════════════════════════════════════════
 // SPEAKING TOPICS POOL
