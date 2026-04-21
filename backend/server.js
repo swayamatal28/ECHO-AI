@@ -20,7 +20,11 @@ const app = express();
 
 connectDB();
 app.use(cors({
-  origin: true,
+  origin: [
+    "https://echo-ai-git-main-swayams-projects-123d6f79.vercel.app",
+    "https://echo-8emlxfud0-swayams-projects-123d6f79.vercel.app",
+    "http://localhost:5173" 
+  ],
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true
 }));
