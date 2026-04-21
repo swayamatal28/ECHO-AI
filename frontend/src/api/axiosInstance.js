@@ -5,13 +5,13 @@ import axios from 'axios';
  * Includes automatic token attachment and error handling
  */
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  // Use the environment variable from Vercel/Local .env, otherwise fallback to localhost
+  baseURL: (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api',
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // 30 seconds timeout for AI responses
+  timeout: 30000, 
 });
-
 /**
  * Request interceptor
  * Attaches JWT token to all requests if available
