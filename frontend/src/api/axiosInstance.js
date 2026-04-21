@@ -4,9 +4,13 @@ import axios from 'axios';
  * Axios instance with base configuration
  * Includes automatic token attachment and error handling
  */
+const isProduction = import.meta.env.PROD;
+
 const axiosInstance = axios.create({
-  // Use the environment variable from Vercel/Local .env, otherwise fallback to localhost
-  baseURL: (import.meta.env.VITE_API_URL || 'http://localhost:5000') + '/api',
+  // HARDCODE the Railway link for production to bypass Vercel variable issues
+  baseURL: isProduction 
+    ? 'https://echo-ai-production-df05.up.railway.app/api' 
+    : 'http://localhost:5000/api',
   headers: {
     'Content-Type': 'application/json',
   },
