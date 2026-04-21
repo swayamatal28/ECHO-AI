@@ -45,6 +45,14 @@ app.use('/api/contests', contestRoutes);
 app.use('/api/blog-writing', blogWritingRoutes);
 app.use('/api/speaking', speakingRoutes);
 
+const cors = require('cors');
+
+app.use(cors({
+  // IMPORTANT: Remove any trailing slash from the URL!
+  origin: "https://echo-8emlxfud0-swayams-projects-123d6f79.vercel.app/", 
+  credentials: true
+}));
+
 app.get('/api/health', (req, res) => {
   res.json({
     success: true,
